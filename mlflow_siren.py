@@ -7,15 +7,17 @@ import mlflow
 from openai import OpenAI
 
 
-DATASET_PATH = Path("dataset")
+load_dotenv()
+
+PROJECT_ROOT = Path(__file__).parent
+DATASET_PATH = PROJECT_ROOT / os.environ.get("DATASET_PATH", "dataset")
+IMAGE_EXTENSIONS = {".jpg", ".jpeg"}
+MODEL = os.environ.get("MODEL", "gpt-4.1-nano")
+TRACKING_URI = os.environ.get("TRACKING_URI", "http://localhost:5000")
 EXPERIMENT_NAME = "siren-sky-benchmark"
-IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
-MODEL = "gpt-4.1-nano"
-TRACKING_URI = "http://localhost:5000"
 
 
 def get_openai_client():
-    load_dotenv()
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
