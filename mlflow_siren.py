@@ -15,6 +15,10 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg"}
 MODEL = os.environ.get("MODEL", "gpt-4.1-nano")
 TRACKING_URI = os.environ.get("TRACKING_URI", "http://localhost:5000")
 EXPERIMENT_NAME = "siren-sky-benchmark"
+CLASSIFICATION_PROMPT = os.environ.get(
+    "CLASSIFICATION_PROMPT",
+    "Is there garbage in this image? Answer with yes or no.",
+)
 
 
 def get_openai_client():
@@ -47,10 +51,7 @@ def classify_image_openai(client, image_path):
             {
                 "role": "user",
                 "content": [
-                    {
-                        "type": "input_text",
-                        "text": "Is there garbage in this image? Answer with yes or no.",
-                    },
+                    {"type": "input_text", "text": CLASSIFICATION_PROMPT},
                     {
                         "type": "input_image",
                         "image_url": f"data:image/jpeg;base64,{base64_image}",
