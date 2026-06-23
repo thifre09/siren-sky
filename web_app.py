@@ -11,7 +11,7 @@ from config import (
     IMAGE_DETAIL,
     MODEL,
     USE_SIMULATED_PREDICTIONS,
-    require_openai_api_key,
+    OPENAI_API_KEY,
 )
 from image_metadata import extract_image_attributes
 
@@ -31,10 +31,19 @@ VISIBLE_COLUMNS = [
 
 
 @st.cache_resource
-def get_client():
+def get_client(api_key):
     if USE_SIMULATED_PREDICTIONS:
         return None
-    return create_openai_client(require_openai_api_key())
+    if not api_key:
+        raise RuntimeError(
+            "OPENAI_API_KEY is not set. Use the API key field in the sidebar or set the environment variable."
+        )
+    return create_openai_client(api_key)
+
+
+def get_active_openai_api_key():
+    key = st.session_state.get("openai_api_key_input", "").strip()
+    return key or OPENAI_API_KEY
 
 
 def save_image_bytes(file_name, image_bytes):
@@ -100,7 +109,7 @@ def classify_record(record):
             return classify_image_simulated(image_path)
         
         return classify_image_openai(
-            client=get_client(),
+            client=get_client(get_active_openai_api_key()),
             image_path=image_path,
             model=MODEL,
             prompt=CLASSIFICATION_PROMPT,
@@ -536,10 +545,30 @@ if "records" not in st.session_state:
     st.session_state["records"] = []
 if "selected_image_id" not in st.session_state:
     st.session_state["selected_image_id"] = None
+if "openai_api_key_input" not in st.session_state:
+    st.session_state["openai_api_key_input"] = OPENAI_API_KEY or ""
 
 upload_results_tab, alerts_tab = st.tabs(["Enviar", "Alertas"])
 
 with upload_results_tab:
+    st.subheader("Configuração da API")
+    st.text_input(
+        "Chave da API OpenAI",
+        type="password",
+        key="openai_api_key_input",
+        help="Se preenchida, esta chave será usada para classificar as imagens nesta sessão.",
+    )
+
+    if USE_SIMULATED_PREDICTIONS:
+        st.info("As previsões simuladas estão ativadas; a chave da API não será usada.")
+    else:
+        active_key = get_active_openai_api_key()
+        if active_key:
+            source = "informada na interface" if st.session_state.get("openai_api_key_input", "").strip() else "carregada do ambiente"
+            st.success(f"Chave ativa {source}.")
+        else:
+            st.warning("Informe uma chave acima ou configure OPENAI_API_KEY no ambiente.")
+
     uploaded_files = st.file_uploader(
         "Enviar imagens do \"drone\" para classificação",
         type=SUPPORTED_UPLOAD_TYPES,
